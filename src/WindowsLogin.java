@@ -1,8 +1,10 @@
 
+import java.io.File;
 import java.io.FileWriter;
+import java.time.LocalDateTime;
 
 /*
- * Class contains features for an app to automatically shutdown a computer when an     unauthorised individual uses it after logging in.
+ * Class contains features for an app to automatically shutdown a computer when an unauthorised individual uses it after logging in.
  * A countdown of 15 seconds will allow the user to quickly create a folder on desktop.
  * The app continuously looks for this folder in the 15s timeframe.
  * If it is found, the user can continue to use the device else it shuts down.
@@ -15,7 +17,7 @@ public class WindowsLogin {
 	
 	public WindowsLogin(String fd) {
 		this.foldername = fd;
-		this.timer = 15;
+		this.timer = 10;
 	}
 	
 	//Getters and Setters of the app properties
@@ -33,8 +35,7 @@ public class WindowsLogin {
 	}
 	
 	public static void main(String[] args) {
-		WindowsLogin WL = new WindowsLogin("I'm Here");
-		WL.countdown();
+		(new WindowsLogin("I'm Here")).countdown();
 	}
 	
 	// Detect password successful login
@@ -43,27 +44,37 @@ public class WindowsLogin {
 	
 	// Setup countdown timer
 	public boolean countdown() {
+		boolean found = false;
+		int t = this.timer;
+		
 		try {
-			for(int t = this.timer; t >= 0; t--) {
-				Thread.sleep(1000); // Delay the program for a second
-				
-				// Make a file every second on desktop
-				FileWriter fw = null;
-				try {
-					// Name each file with the number of the current second
-					fw = new FileWriter("C:\\Users\\Sandiso\\Desktop\\" + t + ".txt", true);
-					
-					// Store the number of the second in the file
-					fw.write(t + "\n");
-					
-					fw.close();
-				}catch(Exception e) {
-					System.out.println("Error! " + e.getMessage());
-					return false;
+			File f = new File("C:\\Users\\Sandiso\\Desktop\\a.txt");
+			
+			FileWriter fw = new FileWriter("C:\\Users\\Sandiso\\Desktop\\answer.txt", true);
+			
+			while(t >= 0 && !found) {
+				t--;
+				if(f.exists()) {
+					found = true;
+					break;
 				}
+				
+				Thread.sleep(1000); // Delay the program for a second
 			}
 			
+			if(found) {
+				fw.write("Found on: " + LocalDateTime.now() + "\n");
+			}else {
+				fw.write("Not found on: " + LocalDateTime.now() + "\n");
+			}
+
+			fw.close();
+
 		}catch(InterruptedException ie) {
+			System.out.println(ie.getMessage());
+			return false;
+		}catch(Exception e) {
+			System.out.println(e.getMessage());
 			return false;
 		}
 		
