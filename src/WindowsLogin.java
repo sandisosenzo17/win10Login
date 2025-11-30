@@ -51,7 +51,7 @@ public class WindowsLogin {
 				FileWriter fw = null;
 				try {
 					// Name each file with the number of the current second
-					fw = new FileWriter("C:\\Desktop\\" + t, true);
+					fw = new FileWriter("C:\\Users\\Sandiso\\Desktop\\" + t + ".txt", true);
 					
 					// Store the number of the second in the file
 					fw.write(t + "\n");
