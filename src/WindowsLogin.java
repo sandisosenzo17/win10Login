@@ -1,7 +1,9 @@
 
-import java.io.File;
 import java.io.FileWriter;
 import java.time.LocalDateTime;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /*
  * Class contains features for an app to automatically shutdown a computer when an unauthorised individual uses it after logging in.
@@ -12,20 +14,20 @@ import java.time.LocalDateTime;
  */
 public class WindowsLogin {
 	//Properties of the app
-	private String foldername;
+	private String filename;
 	private int timer;
 	
 	public WindowsLogin(String fd) {
-		this.foldername = fd;
+		this.filename = fd;
 		this.timer = 10;
 	}
 	
 	//Getters and Setters of the app properties
 	public void setFoldername(String fd) {
-		this.foldername = fd;
+		this.filename = fd;
 	}
 	public String getFoldername() {
-		return this.foldername;
+		return this.filename;
 	}
 	public void setTimer(int t) {
 		this.timer = t;
@@ -35,26 +37,26 @@ public class WindowsLogin {
 	}
 	
 	public static void main(String[] args) {
-		(new WindowsLogin("I'm Here")).countdown();
+		(new WindowsLogin("a.txt")).countdown();
 	}
-	
-	// Detect password successful login
-	
-	
-	
+
 	// Setup countdown timer
 	public boolean countdown() {
 		boolean found = false;
 		int t = this.timer;
 		
 		try {
-			File f = new File("C:\\Users\\Sandiso\\Desktop\\a.txt");
-			
-			FileWriter fw = new FileWriter("C:\\Users\\Sandiso\\Desktop\\answer.txt", true);
+			Path file_path = Paths.get(
+				System.getProperty("user.home"),
+				"Desktop",
+				this.filename
+			);
 			
 			while(t >= 0 && !found) {
 				t--;
-				if(f.exists()) {
+				
+				// Stop counting if file is found
+				if(Files.exists(file_path)) {
 					found = true;
 					break;
 				}
@@ -62,13 +64,15 @@ public class WindowsLogin {
 				Thread.sleep(1000); // Delay the program for a second
 			}
 			
-			if(found) {
-				fw.write("Found on: " + LocalDateTime.now() + "\n");
-			}else {
-				fw.write("Not found on: " + LocalDateTime.now() + "\n");
+			if(!found) {
+				try {
+					// Shutdown device without notifying and close all apps if file not found
+					new ProcessBuilder("shutdown", "/p", "/f").start();
+				}catch(Exception e) {
+					System.out.println(e.getMessage());
+				}
 			}
 
-			fw.close();
 
 		}catch(InterruptedException ie) {
 			System.out.println(ie.getMessage());
@@ -80,8 +84,6 @@ public class WindowsLogin {
 		
 		return true;
 	}
-	
-	// Look for the specific folder on desktop
 	
 	// Setup the shutdown procedure on failed attempt
 }
