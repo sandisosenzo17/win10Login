@@ -1,33 +1,40 @@
 
-import java.io.FileWriter;
-import java.time.LocalDateTime;
+import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /*
- * Class contains features for an app to automatically shutdown a computer when an unauthorised individual uses it after logging in.
+ * App to automatically shutdown a computer on an unauthorised login.
  * A countdown of 15 seconds will allow the user to quickly create a folder on desktop.
  * The app continuously looks for this folder in the 15s timeframe.
  * If it is found, the user can continue to use the device else it shuts down.
- * @author SS Yali
+ * @author S.S. Yali
  */
 public class WindowsLogin {
 	//Properties of the app
-	private String filename;
+	private String file_name;
+	private Path file_path;
 	private int timer;
 	
-	public WindowsLogin(String fd) {
-		this.filename = fd;
-		this.timer = 10;
+	public WindowsLogin(String fd, int t) {
+		this.file_name = fd;
+		this.file_path = Paths.get(
+			System.getProperty("user.home"),
+			"Desktop",
+			this.file_name
+		);
+		this.timer = t;
 	}
 	
 	//Getters and Setters of the app properties
 	public void setFoldername(String fd) {
-		this.filename = fd;
+		this.file_name = fd;
 	}
 	public String getFoldername() {
-		return this.filename;
+		return this.file_name;
 	}
 	public void setTimer(int t) {
 		this.timer = t;
@@ -37,42 +44,43 @@ public class WindowsLogin {
 	}
 	
 	public static void main(String[] args) {
-		(new WindowsLogin("a.txt")).countdown();
+		// Instance of the application on first launch
+		WindowsLogin app = new WindowsLogin("a.txt", 14);
+		
+		// Handle different cases of the device triggers
+		switch(args[0]){
+			case "BOOT":
+				app.onBoot();
+				break;
+			case "LOCK":
+				app.onLock();
+				break;
+			case "UNLOCK":
+				app.onUnlock();
+				break;
+		}
+		
 	}
 
-	// Setup countdown timer
-	public boolean countdown() {
+	// Look for the specified file or folder on the desktop 
+	public boolean lookup() {
 		boolean found = false;
-		int t = this.timer;
+		int timer = this.timer;
 		
 		try {
-			Path file_path = Paths.get(
-				System.getProperty("user.home"),
-				"Desktop",
-				this.filename
-			);
-			
-			while(t >= 0 && !found) {
-				t--;
+			// Search for the file for a specified timer
+			while(timer > 0 && !found) {
 				
-				// Stop counting if file is found
 				if(Files.exists(file_path)) {
+					// Stop checking if the file is found
 					found = true;
 					break;
 				}
 				
+				timer--;
+				
 				Thread.sleep(1000); // Delay the program for a second
-			}
-			
-			if(!found) {
-				try {
-					// Shutdown device without notifying and close all apps if file not found
-					new ProcessBuilder("shutdown", "/p", "/f").start();
-				}catch(Exception e) {
-					System.out.println(e.getMessage());
-				}
-			}
-
+			}		
 
 		}catch(InterruptedException ie) {
 			System.out.println(ie.getMessage());
@@ -82,10 +90,63 @@ public class WindowsLogin {
 			return false;
 		}
 		
-		return true;
+		return found;
 	}
 	
-	// Setup the shutdown procedure on failed attempt
+	// Operations for device boot (device turning on)
+	public void onBoot() {
+		if(Files.exists(file_path)) {
+			
+			//Immediately delete the file/folder before log in is attempted
+			try {
+				Thread.sleep((long) 1700);
+				
+				Files.delete(file_path);
+			}catch(InterruptedException ie) {
+				System.out.println(ie.getMessage());
+			}catch(DirectoryNotEmptyException dne) {
+				System.out.println(dne.getMessage());
+			}catch(NoSuchFileException nsfe) {
+				System.out.println(nsfe.getMessage());
+			}catch(IOException ioe) {
+				System.out.println(ioe.getMessage());
+			}
+				
+		}
+	}
+	
+	// Operations to handle file/folder when device unlocks
+	public void onUnlock() {
+		
+		// If the countdown finishes before the file is found, shutdown the device
+		if(!lookup()) {
+			try {
+				// Close all apps without notification on shutdown
+				new ProcessBuilder("shutdown", "/p", "/f").start();
+			}catch(Exception e) {
+				System.out.println(e.getMessage());
+			}
+		}
+	}
+	
+	//Operations to handle file/folder when device locks
+	public void onLock() {
+		if(Files.exists(file_path)) {
+			
+			//Immediately delete the file/folder prior the next login attempt
+			try {
+				Files.delete(file_path);
+			}catch(DirectoryNotEmptyException dne) {
+				System.out.println(dne.getMessage());
+			}catch(NoSuchFileException nsfe) {
+				System.out.println(nsfe.getMessage());
+			}catch(IOException ioe) {
+				System.out.println(ioe.getMessage());
+			}
+				
+		}
+	}
+	
 }
 
 
